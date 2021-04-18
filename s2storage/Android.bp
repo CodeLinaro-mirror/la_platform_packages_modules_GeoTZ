@@ -13,6 +13,10 @@
 // limitations under the License.
 
 // Library for read-only access to TZ S2 data files.
+package {
+    default_applicable_licenses: ["Android-Apache-2.0"],
+}
+
 java_library {
     name: "geotz_s2storage_ro",
     sdk_version: "current",
@@ -46,7 +50,9 @@ java_test_host {
         "geotz_s2storage_rw",
         "junit",
         "mockito",
+        "objenesis",
     ],
-    test_suites: ["general-tests"],
+    test_options: {
+        unit_test: true,
+    },
 }
-

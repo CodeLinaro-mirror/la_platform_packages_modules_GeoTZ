@@ -13,6 +13,10 @@
 // limitations under the License.
 
 // Defaults shared between real and test versions of the APEX.
+package {
+    default_applicable_licenses: ["Android-Apache-2.0"],
+}
+
 apex_defaults {
     name: "com.android.geotz-defaults",
     updatable: true,
@@ -59,6 +63,9 @@ apex {
 java_library {
     name: "geotz",
     java_resource_dirs: ["resources/"],
+    srcs: [
+        "src/main/java/**/*.java",
+    ],
     static_libs: [
         "offlinelocationtimezoneprovider",
     ],
