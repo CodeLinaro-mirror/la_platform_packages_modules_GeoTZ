@@ -494,12 +494,6 @@ public class OfflineLocationTimeZoneDelegateTest {
 
             @Override
             public String toString() {
-                // Using the debug string is ok for test code.
-                return toPiiString();
-            }
-
-            @Override
-            public String toPiiString() {
                 return "FakeLocationToken{"
                         + "mLngDegrees=" + mLngDegrees
                         + ", mLatDegrees=" + mLatDegrees

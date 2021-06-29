@@ -20,8 +20,6 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.android.timezone.location.common.PiiLoggable;
-
 import java.time.Duration;
 import java.time.Instant;
 
@@ -44,13 +42,6 @@ public final class LogUtils {
     }
 
     /** Logs at debug level when debug logging is enabled via {@link #DBG}. */
-    public static void logDebug(@NonNull PiiLoggable piiLoggable) {
-        if (DBG) {
-            Log.d(LOG_TAG, piiLoggable.toString());
-        }
-    }
-
-    /** Logs at debug level when debug logging is enabled via {@link #DBG}. */
     public static void logDebug(@NonNull String msg) {
         if (DBG) {
             Log.d(LOG_TAG, msg);
@@ -58,18 +49,8 @@ public final class LogUtils {
     }
 
     /** Logs at warn level. */
-    public static void logWarn(@NonNull PiiLoggable piiLoggable) {
-        Log.w(LOG_TAG, piiLoggable.toString());
-    }
-
-    /** Logs at warn level. */
     public static void logWarn(@NonNull String msg) {
         Log.w(LOG_TAG, msg);
-    }
-
-    /** Logs at warn level. */
-    public static void logWarn(@NonNull PiiLoggable piiLoggable, @Nullable Throwable t) {
-        Log.w(LOG_TAG, piiLoggable.toString(), t);
     }
 
     /** Logs at warn level. */

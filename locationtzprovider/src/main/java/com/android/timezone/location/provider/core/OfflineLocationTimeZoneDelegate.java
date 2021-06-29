@@ -36,8 +36,6 @@ import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.android.timezone.location.common.PiiLoggable;
-import com.android.timezone.location.common.PiiLoggables;
 import com.android.timezone.location.lookup.GeoTimeZonesFinder;
 import com.android.timezone.location.lookup.GeoTimeZonesFinder.LocationToken;
 import com.android.timezone.location.provider.core.Environment.LocationListeningResult;
@@ -119,8 +117,7 @@ public final class OfflineLocationTimeZoneDelegate {
 
     /** The current mode of the provider. See {@link Mode} for details. */
     @GuardedBy("mLock")
-    private final ReferenceWithHistory<Mode> mCurrentMode =
-            new ReferenceWithHistory<>(10, PiiLoggables.toPiiStringFunction());
+    private final ReferenceWithHistory<Mode> mCurrentMode = new ReferenceWithHistory<>(10);
 
     /**
      * The last location listening result. Holds {@code null} if location listening hasn't started
@@ -129,7 +126,7 @@ public final class OfflineLocationTimeZoneDelegate {
      */
     @GuardedBy("mLock")
     private final ReferenceWithHistory<LocationListeningResult> mLastLocationListeningResult =
-            new ReferenceWithHistory<>(10, PiiLoggables.toPiiStringFunction());
+            new ReferenceWithHistory<>(10);
 
     /**
      * A token associated with the last location time zone lookup. Used to avoid unnecessary time
@@ -174,7 +171,7 @@ public final class OfflineLocationTimeZoneDelegate {
     }
 
     public void onBind() {
-        PiiLoggable entryCause = PiiLoggables.fromString("onBind() called");
+        String entryCause = "onBind() called";
         logDebug(entryCause);
 
         synchronized (mLock) {
@@ -191,7 +188,7 @@ public final class OfflineLocationTimeZoneDelegate {
     }
 
     public void onDestroy() {
-        PiiLoggable entryCause = PiiLoggables.fromString("onDestroy() called");
+        String entryCause = "onDestroy() called";
         logDebug(entryCause);
 
         synchronized (mLock) {
@@ -209,8 +206,8 @@ public final class OfflineLocationTimeZoneDelegate {
     public void onStartUpdates(@NonNull Duration initializationTimeout) {
         Objects.requireNonNull(initializationTimeout);
 
-        PiiLoggable debugInfo = PiiLoggables.fromString("onStartUpdates(),"
-                + " initializationTimeout=" + initializationTimeout);
+        String debugInfo = "onStartUpdates(),"
+                + " initializationTimeout=" + initializationTimeout;
         logDebug(debugInfo);
 
         synchronized (mLock) {
@@ -237,7 +234,7 @@ public final class OfflineLocationTimeZoneDelegate {
     }
 
     public void onStopUpdates() {
-        PiiLoggable debugInfo = PiiLoggables.fromString("onStopUpdates()");
+        String debugInfo = "onStopUpdates()";
         logDebug(debugInfo);
 
         synchronized (mLock) {
@@ -273,9 +270,7 @@ public final class OfflineLocationTimeZoneDelegate {
             // State and constants.
             pw.println("mInitializationTimeoutCancellable=" + mInitializationTimeoutCancellable);
             pw.println("mLocationListeningAccountant=" + mLocationListeningAccountant);
-            String locationTokenString =
-                    mLastLocationToken == null ? "null" : mLastLocationToken.toPiiString();
-            pw.println("mLastLocationToken=" + locationTokenString);
+            pw.println("mLastLocationToken=" + mLastLocationToken);
             pw.println();
             pw.println("Mode history:");
             mCurrentMode.dump(pw);
@@ -306,12 +301,12 @@ public final class OfflineLocationTimeZoneDelegate {
                 String unexpectedStateDebugInfo = "Unexpected call to onActiveListeningResult(),"
                         + " activeListeningResult=" + activeListeningResult
                         + ", currentMode=" + currentMode;
-                handleUnexpectedLocationCallback(unexpectedStateDebugInfo);
+                handleUnexpectedCallback(unexpectedStateDebugInfo);
                 return;
             }
 
-            PiiLoggable debugInfo = PiiLoggables.fromTemplate("onActiveListeningResult(),"
-                            + " activeListeningResult=%s", activeListeningResult);
+            String debugInfo = "onActiveListeningResult()"
+                    + ", activeListeningResult=" + activeListeningResult;
             logDebug(debugInfo);
 
             // Recover any active listening budget we didn't use.
@@ -348,7 +343,7 @@ public final class OfflineLocationTimeZoneDelegate {
                 String unexpectedStateDebugInfo = "Unexpected call to onPassiveListeningResult(),"
                         + " passiveListeningResult=" + passiveListeningResult
                         + ", currentMode=" + currentMode;
-                handleUnexpectedLocationCallback(unexpectedStateDebugInfo);
+                handleUnexpectedCallback(unexpectedStateDebugInfo);
                 return;
             }
             logDebug("onPassiveListeningResult()"
@@ -371,22 +366,19 @@ public final class OfflineLocationTimeZoneDelegate {
         cancelInitializationTimeout();
 
         Mode currentMode = mCurrentMode.get();
-        PiiLoggable debugInfo = PiiLoggables.fromTemplate(
-                "handleLocationKnown(), locationResult=%s"
-                +", currentMode.mListenMode=" + prettyPrintListenModeEnum(currentMode.mListenMode),
-                locationResult);
+        String debugInfo = "handleLocationKnown(), locationResult=" + locationResult
+                + ", currentMode.mListenMode=" + prettyPrintListenModeEnum(currentMode.mListenMode);
         logDebug(debugInfo);
 
         try {
             sendTimeZoneCertainResultIfNeeded(locationResult.getLocation());
         } catch (IOException e) {
             // This should never happen.
-            PiiLoggable lookupFailureDebugInfo = PiiLoggables.fromTemplate(
-                    "IOException while looking up location. previous debugInfo=%s", debugInfo);
+            String lookupFailureDebugInfo = "IOException while looking up location."
+                    + " previous debugInfo=" + debugInfo;
             logWarn(lookupFailureDebugInfo, e);
 
-            enterFailedMode(new IOException(lookupFailureDebugInfo.toString(), e),
-                    lookupFailureDebugInfo);
+            enterFailedMode(new IOException(lookupFailureDebugInfo, e));
         }
     }
 
@@ -417,15 +409,14 @@ public final class OfflineLocationTimeZoneDelegate {
      * @param duration the duration that listening took place for
      */
     private void onPassiveListeningEnded(@NonNull Duration duration) {
-        PiiLoggable debugInfo = PiiLoggables.fromString(
-                "onPassiveListeningEnded(), duration=" + duration);
+        String debugInfo = "onPassiveListeningEnded()";
         logDebug(debugInfo);
 
         synchronized (mLock) {
             Mode currentMode = mCurrentMode.get();
             if (currentMode.mModeEnum != MODE_STARTED
                     || currentMode.mListenMode != LOCATION_LISTEN_MODE_PASSIVE) {
-                handleUnexpectedLocationCallback("Unexpected call to onPassiveListeningEnded()"
+                handleUnexpectedCallback("Unexpected call to onPassiveListeningEnded()"
                         + ", currentMode=" + currentMode);
                 return;
             }
@@ -482,11 +473,11 @@ public final class OfflineLocationTimeZoneDelegate {
             // If the location token is the same as the last lookup, there is no need to do the
             // lookup / send another suggestion.
             if (locationToken.equals(mLastLocationToken)) {
-                logDebug("Location token has not changed.");
+                logDebug("Location token=" + locationToken + " has not changed.");
             } else {
                 List<String> tzIds =
                         geoTimeZonesFinder.findTimeZonesForLocationToken(locationToken);
-                logDebug("tzIds found for locationToken=" + locationToken + ", tzIds=" + tzIds);
+                logDebug("tzIds found for location=" + location + ", tzIds=" + tzIds);
                 // Rather than use the current elapsed realtime clock, use the time associated with
                 // the location since that gives a more accurate answer.
                 long elapsedRealtimeMillis =
@@ -564,18 +555,17 @@ public final class OfflineLocationTimeZoneDelegate {
     }
 
     @GuardedBy("mLock")
-    private void handleUnexpectedLocationCallback(@NonNull String debugInfo) {
-        // Unexpected location callbacks can occur when location listening is cancelled, but a
-        // location is already available (e.g. the callback is already invoked but blocked or
-        // sitting in a handler queue). This is logged but generally ignored.
-        logDebug(debugInfo);
+    private void handleUnexpectedCallback(@NonNull String debugInfo) {
+        // To help track down unexpected behavior, this fails hard.
+        logWarn(debugInfo);
+        throw new IllegalStateException(debugInfo);
     }
 
     @GuardedBy("mLock")
     private void enterStartedMode(
-            @NonNull Duration initializationTimeout, @NonNull PiiLoggable entryCause) {
+            @NonNull Duration initializationTimeout, @NonNull String debugInfo) {
         Objects.requireNonNull(initializationTimeout);
-        Objects.requireNonNull(entryCause);
+        Objects.requireNonNull(debugInfo);
 
         // The request contains the initialization time in which the LTZP is given to provide the
         // first result. We set a timeout to try to ensure that we do send a result.
@@ -585,23 +575,24 @@ public final class OfflineLocationTimeZoneDelegate {
                 this::onInitializationTimeout, initializationToken,
                 initializationTimeout);
 
-        startNextLocationListening(entryCause);
+        startNextLocationListening(debugInfo);
     }
 
     @GuardedBy("mLock")
-    private void enterFailedMode(@NonNull Throwable failure, @NonNull PiiLoggable entryCause) {
-        logDebug(entryCause);
+    private void enterFailedMode(@NonNull Throwable entryCause) {
+        logDebug("Provider entering failed mode, entryCause=" + entryCause);
 
         cancelTimeoutsAndLocationCallbacks();
 
-        sendPermanentFailureResult(failure);
+        sendPermanentFailureResult(entryCause);
 
-        Mode newMode = new Mode(MODE_FAILED, entryCause);
+        String failureReason = entryCause.getMessage();
+        Mode newMode = new Mode(MODE_FAILED, failureReason);
         mCurrentMode.set(newMode);
     }
 
     @GuardedBy("mLock")
-    private void enterStoppedMode(@NonNull PiiLoggable entryCause) {
+    private void enterStoppedMode(@NonNull String entryCause) {
         logDebug("Provider entering stopped mode, entryCause=" + entryCause);
 
         cancelTimeoutsAndLocationCallbacks();
@@ -615,7 +606,7 @@ public final class OfflineLocationTimeZoneDelegate {
     }
 
     @GuardedBy("mLock")
-    private void startNextLocationListening(@NonNull PiiLoggable entryCause) {
+    private void startNextLocationListening(@NonNull String entryCause) {
         logDebug("Provider entering location listening mode entryCause=" + entryCause);
 
         Mode currentMode = mCurrentMode.get();

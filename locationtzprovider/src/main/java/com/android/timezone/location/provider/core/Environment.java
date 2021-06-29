@@ -26,11 +26,8 @@ import android.os.SystemClock;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.android.timezone.location.common.PiiLoggable;
-import com.android.timezone.location.common.PiiLoggables;
 import com.android.timezone.location.lookup.GeoTimeZonesFinder;
 import com.android.timezone.location.provider.core.OfflineLocationTimeZoneDelegate.ListenModeEnum;
-import com.android.timezone.location.common.PiiLoggables.PiiLoggableValue;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -66,7 +63,7 @@ public interface Environment {
      * <p>With active listening the {@link #getLocation() location} can be {@code null} (meaning
      * "location unknown"), with passive listening it is never {@code null}.
      */
-    final class LocationListeningResult implements PiiLoggable {
+    final class LocationListeningResult {
         /**
          * The type of listening that produced the result. This is recorded for logging / debugging.
          */
@@ -84,8 +81,8 @@ public interface Environment {
          */
         private final long mResultElapsedRealtimeMillis;
 
-        /** Holds the location, or {@code null} if the location is not known (active only). */
-        @NonNull private final PiiLoggableValue<Location> mPiiLoggableLocation;
+        /** The location, or {@code null} if the location is not known (active only). */
+        @Nullable private final Location mLocation;
 
         public LocationListeningResult(
                 @ListenModeEnum int listenMode,
@@ -97,7 +94,7 @@ public interface Environment {
             mListeningDuration = Objects.requireNonNull(listeningDuration);
             mStartElapsedRealtimeMillis = startElapsedRealtimeMillis;
             mResultElapsedRealtimeMillis = resultElapsedRealtimeMillis;
-            mPiiLoggableLocation = PiiLoggables.fromPiiValue(location);
+            mLocation = location;
         }
 
         /** Returns how long listening was requested for. */
@@ -108,13 +105,13 @@ public interface Environment {
 
         /** Returns whether result of listening was a known location. */
         public boolean isLocationKnown() {
-            return mPiiLoggableLocation.get() != null;
+            return mLocation != null;
         }
 
         /** Returns the location. See {@link #isLocationKnown()}. */
         @Nullable
         public Location getLocation() {
-            return mPiiLoggableLocation.get();
+            return mLocation;
         }
 
         /** Returns (an approximation) of when listening started. */
@@ -154,28 +151,16 @@ public interface Environment {
          */
         @NonNull
         public Duration getLocationAge(long elapsedRealtimeMillis) {
-            Location location = mPiiLoggableLocation.get();
-            if (location == null) {
+            if (mLocation == null) {
                 throw new IllegalStateException();
             }
             long locationAgeMillis = elapsedRealtimeMillis
-                    - NANOSECONDS.toMillis(location.getElapsedRealtimeNanos());
+                    - NANOSECONDS.toMillis(mLocation.getElapsedRealtimeNanos());
             return Duration.ofMillis(locationAgeMillis);
         }
 
         @Override
-        public String toPiiString() {
-            String template = toStringTemplate();
-            return PiiLoggables.formatPiiString(template, mPiiLoggableLocation);
-        }
-
-        @Override
         public String toString() {
-            String template = toStringTemplate();
-            return String.format(template, mPiiLoggableLocation);
-        }
-
-        private String toStringTemplate() {
             return "LocationListeningResult{"
                     + "mListenMode=" + prettyPrintListenModeEnum(mListenMode)
                     + ", mListeningDuration=" + mListeningDuration
@@ -183,7 +168,7 @@ public interface Environment {
                     + formatElapsedRealtimeMillis(mStartElapsedRealtimeMillis)
                     + ", mResultElapsedRealtimeMillis="
                     + formatElapsedRealtimeMillis(mResultElapsedRealtimeMillis)
-                    + ", mPiiLoggableLocation=%s"
+                    + ", mLocation=" + mLocation
                     + ", getTotalEstimatedTimeListening()=" + getTotalEstimatedTimeListening()
                     + '}';
         }

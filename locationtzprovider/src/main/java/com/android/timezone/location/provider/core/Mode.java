@@ -26,8 +26,6 @@ import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.android.timezone.location.common.PiiLoggable;
-import com.android.timezone.location.common.PiiLoggables;
 import com.android.timezone.location.provider.core.OfflineLocationTimeZoneDelegate.ListenModeEnum;
 
 import java.util.Objects;
@@ -64,7 +62,7 @@ import java.util.Objects;
  *       - when the provider's service is destroyed, perhaps as part of the current user changing
  * </pre>
  */
-class Mode implements PiiLoggable {
+class Mode {
 
     @IntDef({ MODE_STOPPED, MODE_STARTED, MODE_FAILED, MODE_DESTROYED })
     @interface ModeEnum {}
@@ -113,7 +111,7 @@ class Mode implements PiiLoggable {
      * Debug information: Information about why the mode was entered.
      */
     @NonNull
-    private final PiiLoggable mEntryCause;
+    private final String mEntryCause;
 
     /**
      * Used when mModeEnum == {@link #MODE_STARTED}. The {@link Cancellable} that can be
@@ -122,15 +120,15 @@ class Mode implements PiiLoggable {
     @Nullable
     private final Cancellable mLocationListenerCancellable;
 
-    Mode(@ModeEnum int modeEnum, @NonNull PiiLoggable entryCause) {
+    Mode(@ModeEnum int modeEnum, @NonNull String entryCause) {
         this(modeEnum, entryCause, LOCATION_LISTEN_MODE_NA, null);
     }
 
-    Mode(@ModeEnum int modeEnum, @NonNull PiiLoggable entryCause, @ListenModeEnum int listenMode,
+    Mode(@ModeEnum int modeEnum, @NonNull String entryCause, @ListenModeEnum int listenMode,
             @Nullable Cancellable listeningCancellable) {
         mModeEnum = validateModeEnum(modeEnum);
         mListenMode = validateListenModeEnum(modeEnum, listenMode);
-        mEntryCause = Objects.requireNonNull(entryCause);
+        mEntryCause = entryCause;
         mLocationListenerCancellable = listeningCancellable;
 
         // Information useful for logging / debugging.
@@ -140,7 +138,7 @@ class Mode implements PiiLoggable {
     /** Returns the stopped mode which is the starting state for a provider. */
     @NonNull
     static Mode createStoppedMode() {
-        return new Mode(MODE_STOPPED, PiiLoggables.fromString("init") /* entryCause */);
+        return new Mode(MODE_STOPPED, "init" /* entryCause */);
     }
 
     /**
@@ -155,24 +153,13 @@ class Mode implements PiiLoggable {
     }
 
     @Override
-    public String toPiiString() {
-        String template = toStringTemplate();
-        return PiiLoggables.formatPiiString(template, mEntryCause);
-    }
-
-    @Override
     public String toString() {
-        String template = toStringTemplate();
-        return String.format(template, mEntryCause);
-    }
-
-    private String toStringTemplate() {
         return "Mode{"
                 + "mModeEnum=" + prettyPrintModeEnum(mModeEnum)
                 + ", mListenMode=" + prettyPrintListenModeEnum(mListenMode)
                 + ", mCreationElapsedRealtimeMillis="
                 + formatElapsedRealtimeMillis(mCreationElapsedRealtimeMillis)
-                + ", mEntryCause={%s}"
+                + ", mEntryCause={" + mEntryCause + '}'
                 + ", mLocationListenerCancellable=" + mLocationListenerCancellable
                 + '}';
     }

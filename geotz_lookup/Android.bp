@@ -24,7 +24,6 @@ java_library {
     min_sdk_version: "current",
     libs: ["androidx.annotation_annotation"],
     static_libs: [
-        "geotz_common",
         "geotz_s2storage_ro",
         "s2-geometry-library-java",
     ],
